@@ -1,0 +1,39 @@
+# Local end-to-end stack: a throwaway Paperless-NGX (+ Redis) plus the MCP server.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# Paperless: http://localhost:8010 (log in with DEV_ADMIN_USER / DEV_ADMIN_PASSWORD)
+# MCP:       http://localhost:8000/mcp
+services:
+  broker:
+    image: docker.io/library/redis:8
+    container_name: paperless-dev-redis
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.4.2
+    container_name: paperless-dev
+    depends_on: [broker]
+    ports:
+      - "8010:8000"
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_SECRET_KEY: dev-only-not-secret-dev-only-not-secret
+      PAPERLESS_ADMIN_USER: ${DEV_ADMIN_USER:-admin}
+      PAPERLESS_ADMIN_PASSWORD: ${DEV_ADMIN_PASSWORD:?set DEV_ADMIN_PASSWORD in .env}
+      PAPERLESS_URL: http://localhost:8010
+    volumes:
+      - paperless-dev-data:/usr/src/paperless/data
+      - paperless-dev-media:/usr/src/paperless/media
+
+  paperless-mcp:
+    environment:
+      PAPERLESS_URL: http://paperless:8000
+      PAPERLESS_TOKEN: ""
+      PAPERLESS_USERNAME: ${DEV_ADMIN_USER:-admin}
+      PAPERLESS_PASSWORD: ${DEV_ADMIN_PASSWORD}
+      PAPERLESS_PUBLIC_URL: http://localhost:8010
+      MCP_PUBLIC_URL: http://localhost:8000
+    depends_on:
+      - paperless
+
+volumes:
+  paperless-dev-data:
+  paperless-dev-media:
