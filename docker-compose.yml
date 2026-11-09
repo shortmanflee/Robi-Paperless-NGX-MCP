@@ -1,0 +1,28 @@
+# Paperless-NGX MCP server. Point PAPERLESS_URL (in .env) at your existing Paperless.
+#
+# If Paperless runs in another compose project, attach to its network instead of using a
+# LAN URL, e.g. uncomment `networks` below and set PAPERLESS_URL=http://webserver:8000
+services:
+  paperless-mcp:
+    build: .
+    image: paperless-mcp:latest
+    container_name: paperless-mcp
+    env_file: .env
+    ports:
+      - "${MCP_PUBLISH_PORT:-8000}:8000"
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    # Staging area for uploads/URL downloads (files are deleted as soon as Paperless has
+    # them). tmpfs lives in RAM: size it for MCP_MAX_CONCURRENT_UPLOADS x MCP_MAX_UPLOAD_MB.
+    # To use disk instead, replace with a volume mounted at the same path.
+    tmpfs:
+      - /tmp/paperless-mcp:size=512m,mode=1777
+#    networks: [paperless]
+
+#networks:
+#  paperless:
+#    external: true
+#    name: paperless_default
